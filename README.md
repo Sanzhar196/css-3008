@@ -19,3 +19,22 @@ Statuses: `DRAFT`, `APPROVED`, `REJECTED`, `CANCELLED`.
 ## Forbidden — why
 - **DRAFT → CANCELLED:** a draft was never approved, so there is nothing to cancel. It is rejected or edited instead.
 - **REJECTED → CANCELLED:** a rejected request is already closed. Cancelling it again would break the audit history.
+
+## Architecture
+dto client handler config
+(JSON later) (HTTP later) (HTTP week 9) Application
+RequestService (@Service)
+\ \ / |
+\ \ / injects Rule
+\ \ /
+domain
+RequestId RequestStatus RequestPolicy
+Rule + TransitionRule + OnlyApprovedCanCancelRule
+(no Spring)
+
+Arrows point inward. `domain` never imports `org.springframework`.
+
+## Run and test
+
+    mvn spring-boot:run
+    mvn -q verify

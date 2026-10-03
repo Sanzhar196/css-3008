@@ -1,22 +1,28 @@
 package org.narxoz.domain;
 
-import java.util.Map;
+import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
-public class RequestPolicy {
-    private static final Map<RequestStatus, Set<RequestStatus>> ALLOWED = Map.of(
-            RequestStatus.DRAFT,     Set.of(RequestStatus.APPROVED, RequestStatus.REJECTED),
-            RequestStatus.APPROVED,  Set.of(RequestStatus.CANCELLED),
-            RequestStatus.REJECTED,  Set.of(),
-            RequestStatus.CANCELLED, Set.of());
+public class RequestPolicy implements Rule {
+    private final List<Rule> rules;
 
-    public RequestStatus move(RequestStatus from, RequestStatus to) {
+    public RequestPolicy() {
+        this(List.of(new TransitionRule(), new OnlyApprovedCanCancelRule()));
+    }
+
+    public RequestPolicy(List<Rule> rules) {
+        this.rules = List.copyOf(rules);
+    }
+
+    @Override
+    public void check(RequestStatus from, RequestStatus to) {
         Objects.requireNonNull(from, "from");
         Objects.requireNonNull(to, "to");
-        if (!ALLOWED.get(from).contains(to)) {
-            throw new IllegalStateException(from + " -> " + to + " is forbidden");
-        }
+        rules.forEach(r -> r.check(from, to));
+    }
+
+    public RequestStatus move(RequestStatus from, RequestStatus to) {
+        check(from, to);
         return to;
     }
 }
