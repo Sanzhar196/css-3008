@@ -1,6 +1,11 @@
 package org.narxoz.config;
 
-import org.narxoz.domain.*;
+import org.narxoz.domain.OnlyApprovedCanCancelRule;
+import org.narxoz.domain.RequestId;
+import org.narxoz.domain.RequestPolicy;
+import org.narxoz.domain.RequestStatus;
+import org.narxoz.domain.Rule;
+import org.narxoz.domain.TransitionRule;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,6 +23,6 @@ public class AppConfig {
     @Bean
     CommandLineRunner demo(RequestService service) {
         return args -> System.out.println("DRAFT -> APPROVED: "
-                + service.move(RequestStatus.DRAFT, RequestStatus.APPROVED));
+                + service.move(RequestId.newId(), RequestStatus.DRAFT, RequestStatus.APPROVED));
     }
 }
