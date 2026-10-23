@@ -4,14 +4,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.narxoz.domain.DuplicateRequest;
 import org.narxoz.domain.RequestId;
-import org.narxoz.persistence.RequestJdbc;
+import org.narxoz.persistence.RequestJpa;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -20,13 +16,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class RequestDbTest {
 
     @Autowired RequestService service;
-    @Autowired RequestJdbc requests;
+    @Autowired RequestJpa requests;
     @Autowired JdbcTemplate jdbc;
 
     @BeforeEach
-    void cleanDatabase() throws IOException {
-        jdbc.execute("DROP TABLE IF EXISTS purchase_request");
-        jdbc.execute(Files.readString(Path.of("src/main/resources/db/schema.sql")));
+    void empty() {
+        jdbc.update("DELETE FROM purchase_request");
     }
 
     @Test

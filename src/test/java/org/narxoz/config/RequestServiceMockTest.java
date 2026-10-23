@@ -5,7 +5,7 @@ import org.narxoz.domain.NotificationPort;
 import org.narxoz.domain.RequestId;
 import org.narxoz.domain.RequestPolicy;
 import org.narxoz.domain.RequestStatus;
-import org.narxoz.persistence.RequestJdbc;
+import org.narxoz.persistence.RequestJpa;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -16,7 +16,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 class RequestServiceMockTest {
     private final NotificationPort port = mock(NotificationPort.class);
     private final RequestService service =
-            new RequestService(new RequestPolicy(), mock(RequestJdbc.class), port);
+            new RequestService(new RequestPolicy(), mock(RequestJpa.class), port);
     private final RequestId id = new RequestId("REQ-001");
 
     @Test
