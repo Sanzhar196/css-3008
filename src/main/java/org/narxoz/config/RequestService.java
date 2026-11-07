@@ -1,9 +1,11 @@
 package org.narxoz.config;
 
 import org.narxoz.domain.DuplicateRequest;
+import org.narxoz.domain.MissingRequest;
 import org.narxoz.domain.NotificationPort;
 import org.narxoz.domain.RequestId;
 import org.narxoz.domain.RequestStatus;
+import org.narxoz.domain.RequestView;
 import org.narxoz.domain.Rule;
 import org.narxoz.persistence.RequestJpa;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -30,10 +32,17 @@ public class RequestService {
 
     /** One transaction per call. A duplicate key throws and nothing from this call is kept. */
     @Transactional
-    public void register(RequestId id, String businessKey, String title) {
+    public RequestView register(RequestId id, String businessKey, String title) {
         requireText(businessKey, "businessKey");
         requireText(title, "title");
         insertOrDuplicate(id, businessKey, title);
+        return new RequestView(id, businessKey, RequestStatus.DRAFT, title);
+    }
+
+    /** Read only. A missing row throws MissingRequest. It never inserts, moves or flushes. */
+    @Transactional(readOnly = true)
+    public RequestView require(RequestId id) {
+        return requests.find(id).orElseThrow(() -> new MissingRequest(id.value()));
     }
 
     /** One transaction, two inserts. The second fails, so the first is rolled back too. */

@@ -3,8 +3,10 @@ package org.narxoz.persistence;
 import jakarta.persistence.EntityManager;
 import org.narxoz.domain.RequestId;
 import org.narxoz.domain.RequestStatus;
+import org.narxoz.domain.RequestView;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -18,6 +20,16 @@ public class RequestJpa {
     public void insert(RequestId id, String businessKey, RequestStatus status, String title) {
         em.persist(new RequestEntity(UUID.fromString(id.value()), businessKey, status.name(), title));
         em.flush(); // send the INSERT now, so a UNIQUE violation surfaces here
+    }
+
+    public Optional<RequestView> find(RequestId id) {
+        RequestEntity found = em.find(RequestEntity.class, UUID.fromString(id.value()));
+        if (found == null) {
+            return Optional.empty();
+        }
+        // an unknown status text throws here: it never becomes a new status
+        return Optional.of(new RequestView(id, found.getBusinessKey(),
+                RequestStatus.valueOf(found.getStatus()), found.getTitle()));
     }
 
     public int count(String businessKey) {
