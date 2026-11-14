@@ -13,3 +13,10 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: false
     out-of-order: false
+
+server:
+  error:
+    include-stacktrace: never
+    include-message: never
+    include-binding-errors: never
+    include-exception: false
