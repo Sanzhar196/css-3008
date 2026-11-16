@@ -57,3 +57,19 @@ A duplicate business key becomes the domain error `DuplicateRequest` (unchecked,
     docker compose up -d
     mvn -q verify
     mvn spring-boot:run
+
+## Security rules (Lab 5)
+
+Roles: `CLERK` (junior) and `MANAGER` (senior). The locked action is `approve` (DRAFT to APPROVED).
+
+| Action | CLERK | MANAGER | No token |
+| --- | --- | --- | --- |
+| `POST /api/v1/auth/login` | anyone | anyone | allowed |
+| Create and read a purchase request | yes | yes | 401 |
+| `POST /api/v1/purchase-requests/{id}/approve` | 403 | yes | 401 |
+| `GET /api/me` | yes | yes | 401 |
+| `GET /actuator/health` | anyone | anyone | allowed |
+| springdoc UI and `/v3/api-docs/**` | anyone | anyone | allowed |
+| Anything else | 403 | 403 | 401 |
+
+Dev users (profile `dev` only): `clerk` / `clerk-dev` and `manager` / `manager-dev`.
