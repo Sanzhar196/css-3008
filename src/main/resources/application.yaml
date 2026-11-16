@@ -18,3 +18,19 @@ server:
     include-message: never
     include-binding-errors: never
     include-exception: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    name: Purchase Requests
