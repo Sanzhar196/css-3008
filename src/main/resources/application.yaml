@@ -34,3 +34,8 @@ management:
 info:
   app:
     name: Purchase Requests
+
+app:
+  jwt:
+    issuer: purchase-requests
+    ttl: 15m
