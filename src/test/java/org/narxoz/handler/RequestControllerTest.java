@@ -2,6 +2,8 @@ package org.narxoz.handler;
 
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.narxoz.config.RequestService;
 import org.narxoz.config.SecurityConfig;
 import org.narxoz.domain.DuplicateRequest;
@@ -152,6 +154,27 @@ class RequestControllerTest {
         mvc.perform(get("/actuator/health"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("UP"));
+    }
+
+    @Test
+    void anonymousUnknownApiRouteIs401() throws Exception {
+        mvc.perform(get("/api/v1/unknown"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));
+        verifyNoInteractions(service);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"ROLE_CLERK", "ROLE_MANAGER"})
+    void authenticatedUnknownApiRouteIs403(String role) throws Exception {
+        mvc.perform(get("/api/v1/unknown")
+                        .with(jwt().authorities(() -> role))
+                        .header("X-Correlation-Id", "unknown-route"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"))
+                .andExpect(jsonPath("$.message").value("not allowed for your role"))
+                .andExpect(jsonPath("$.correlationId").value("unknown-route"));
+        verifyNoInteractions(service);
     }
 
     @Test

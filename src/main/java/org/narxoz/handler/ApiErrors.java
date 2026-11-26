@@ -13,6 +13,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
@@ -47,8 +48,14 @@ public class ApiErrors {
                 .body(new ApiError("NOT_FOUND", ex.getMessage(), Correlation.of(req)));
     }
 
-    @ExceptionHandler(NoResourceFoundException.class)
+    @ExceptionHandler({NoResourceFoundException.class, NoHandlerFoundException.class})
     ResponseEntity<ApiError> noResource(HttpServletRequest req) {
+        String apiRoot = req.getContextPath() + "/api/v1";
+        String path = req.getRequestURI();
+        if (path.equals(apiRoot) || path.startsWith(apiRoot + "/")) {
+            return ResponseEntity.status(403)
+                    .body(new ApiError("FORBIDDEN", "not allowed for your role", Correlation.of(req)));
+        }
         return ResponseEntity.status(404)
                 .body(new ApiError("NOT_FOUND", "not found", Correlation.of(req)));
     }
