@@ -1,6 +1,7 @@
 package org.narxoz.handler;
 
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -19,7 +20,7 @@ public class MeController {
     })
     public MeResponse me(Authentication authentication) {
         return new MeResponse(authentication.getName(), authentication.getAuthorities().stream()
-                .map(authority -> authority.getAuthority()).toList());
+                .map(GrantedAuthority::getAuthority).toList());
     }
 
     public record MeResponse(String username, List<String> authorities) { }

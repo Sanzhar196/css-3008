@@ -14,7 +14,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -22,6 +21,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -65,6 +65,7 @@ class RequestControllerTest {
 
         String id = JsonPath.read(result.getResponse().getContentAsString(), "$.id");
         String location = result.getResponse().getHeader("Location");
+        assertNotNull(location, "Location header must be present");
         assertTrue(location.endsWith(id), "Location must end with the id");
     }
 

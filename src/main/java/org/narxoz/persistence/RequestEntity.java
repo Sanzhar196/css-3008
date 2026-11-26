@@ -5,7 +5,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Entity
@@ -23,9 +22,6 @@ public class RequestEntity {
 
     @Column(nullable = false)
     private String title;
-
-    @Column(name = "created_at", insertable = false, updatable = false)
-    private OffsetDateTime createdAt;
 
     protected RequestEntity() {
         // JPA needs a no-arg constructor

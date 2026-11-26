@@ -15,8 +15,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
-import java.util.UUID;
-
 @RestControllerAdvice
 public class ApiErrors {
     private static final Logger log = LoggerFactory.getLogger(ApiErrors.class);
@@ -28,65 +26,57 @@ public class ApiErrors {
                 ? "request is not valid"
                 : words(error.getField()) + " " + error.getDefaultMessage();
         return ResponseEntity.badRequest()
-                .body(new ApiError("VALIDATION", message, correlation(req)));
+                .body(new ApiError("VALIDATION", message, Correlation.of(req)));
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    ResponseEntity<ApiError> badId(MethodArgumentTypeMismatchException ex, HttpServletRequest req) {
+    ResponseEntity<ApiError> badId(HttpServletRequest req) {
         return ResponseEntity.badRequest()
-                .body(new ApiError("VALIDATION", "id must be a UUID", correlation(req)));
+                .body(new ApiError("VALIDATION", "id must be a UUID", Correlation.of(req)));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    ResponseEntity<ApiError> notJson(HttpMessageNotReadableException ex, HttpServletRequest req) {
+    ResponseEntity<ApiError> notJson(HttpServletRequest req) {
         return ResponseEntity.badRequest()
-                .body(new ApiError("VALIDATION", "body must be JSON", correlation(req)));
+                .body(new ApiError("VALIDATION", "body must be JSON", Correlation.of(req)));
     }
 
     @ExceptionHandler(MissingRequest.class)
     ResponseEntity<ApiError> missing(MissingRequest ex, HttpServletRequest req) {
         return ResponseEntity.status(404)
-                .body(new ApiError("NOT_FOUND", ex.getMessage(), correlation(req)));
+                .body(new ApiError("NOT_FOUND", ex.getMessage(), Correlation.of(req)));
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
-    ResponseEntity<ApiError> noResource(NoResourceFoundException ex, HttpServletRequest req) {
+    ResponseEntity<ApiError> noResource(HttpServletRequest req) {
         return ResponseEntity.status(404)
-                .body(new ApiError("NOT_FOUND", "not found", correlation(req)));
+                .body(new ApiError("NOT_FOUND", "not found", Correlation.of(req)));
     }
 
     @ExceptionHandler(DuplicateRequest.class)
     ResponseEntity<ApiError> duplicate(DuplicateRequest ex, HttpServletRequest req) {
         return ResponseEntity.status(409)
-                .body(new ApiError("DUPLICATE", ex.getMessage(), correlation(req)));
+                .body(new ApiError("DUPLICATE", ex.getMessage(), Correlation.of(req)));
     }
 
     @ExceptionHandler(IllegalStateException.class)
     ResponseEntity<ApiError> invalidTransition(IllegalStateException ex, HttpServletRequest req) {
         return ResponseEntity.status(409)
-                .body(new ApiError("INVALID_TRANSITION", ex.getMessage(), correlation(req)));
+                .body(new ApiError("INVALID_TRANSITION", ex.getMessage(), Correlation.of(req)));
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
-    ResponseEntity<ApiError> unsupported(HttpMediaTypeNotSupportedException ex, HttpServletRequest req) {
+    ResponseEntity<ApiError> unsupported(HttpServletRequest req) {
         return ResponseEntity.status(415)
-                .body(new ApiError("UNSUPPORTED", "unsupported content type", correlation(req)));
+                .body(new ApiError("UNSUPPORTED", "unsupported content type", Correlation.of(req)));
     }
 
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiError> unexpected(Exception ex, HttpServletRequest req) {
-        String id = correlation(req);
+        String id = Correlation.of(req);
         log.error("unexpected error, correlationId={}", id, ex);
         return ResponseEntity.status(500)
                 .body(new ApiError("INTERNAL", "unexpected error", id));
-    }
-
-    private String correlation(HttpServletRequest req) {
-        String id = req.getHeader("X-Correlation-Id");
-        if (id == null || id.isBlank()) {
-            return UUID.randomUUID().toString();
-        }
-        return id;
     }
 
     /** businessKey becomes "business key", title stays "title". */

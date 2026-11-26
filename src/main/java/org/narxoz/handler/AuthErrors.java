@@ -15,13 +15,13 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class AuthErrors {
 
     @ExceptionHandler(AuthenticationException.class)
-    ResponseEntity<ApiError> badLogin(AuthenticationException ex, HttpServletRequest req) {
+    ResponseEntity<ApiError> badLogin(HttpServletRequest req) {
         return ResponseEntity.status(401)
                 .body(new ApiError("UNAUTHENTICATED", "bad username or password", Correlation.of(req)));
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    ResponseEntity<ApiError> forbidden(AccessDeniedException ex, HttpServletRequest req) {
+    ResponseEntity<ApiError> forbidden(HttpServletRequest req) {
         return ResponseEntity.status(403)
                 .body(new ApiError("FORBIDDEN", "not allowed for your role", Correlation.of(req)));
     }

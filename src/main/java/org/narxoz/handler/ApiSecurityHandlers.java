@@ -24,16 +24,16 @@ public class ApiSecurityHandlers implements AuthenticationEntryPoint, AccessDeni
     @Override
     public void commence(HttpServletRequest req, HttpServletResponse res,
                          AuthenticationException ex) throws IOException {
-        write(req, res, 401, new ApiError("UNAUTHENTICATED", "valid token required", Correlation.of(req)));
+        write(res, 401, new ApiError("UNAUTHENTICATED", "valid token required", Correlation.of(req)));
     }
 
     @Override
     public void handle(HttpServletRequest req, HttpServletResponse res,
                        AccessDeniedException ex) throws IOException {
-        write(req, res, 403, new ApiError("FORBIDDEN", "not allowed for your role", Correlation.of(req)));
+        write(res, 403, new ApiError("FORBIDDEN", "not allowed for your role", Correlation.of(req)));
     }
 
-    private void write(HttpServletRequest req, HttpServletResponse res, int status, ApiError body)
+    private void write(HttpServletResponse res, int status, ApiError body)
             throws IOException {
         res.setStatus(status);
         res.setContentType(MediaType.APPLICATION_JSON_VALUE);

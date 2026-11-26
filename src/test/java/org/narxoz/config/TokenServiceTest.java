@@ -17,6 +17,7 @@ import java.time.Instant;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -47,7 +48,9 @@ class TokenServiceTest {
         assertEquals("manager", jwt.getSubject());
         assertEquals(List.of("MANAGER"), jwt.getClaimAsStringList("roles"));
         assertEquals(ISSUER, jwt.getClaimAsString("iss"));
-        assertTrue(jwt.getExpiresAt().isAfter(Instant.now()));
+        Instant expiresAt = jwt.getExpiresAt();
+        assertNotNull(expiresAt, "JWT must contain an expiration time");
+        assertTrue(expiresAt.isAfter(Instant.now()));
         assertEquals(900L, issued.expiresInSeconds());
     }
 

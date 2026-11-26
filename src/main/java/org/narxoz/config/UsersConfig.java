@@ -3,6 +3,7 @@ package org.narxoz.config;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.Primary;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -14,6 +15,7 @@ public class UsersConfig {
     /** Laptop only. Two classroom users, BCrypt hashes, no {noop}. */
     @Bean
     @Profile("dev")
+    @Primary
     UserDetailsService devUsers(PasswordEncoder encoder) {
         return new InMemoryUserDetailsManager(
                 User.withUsername("clerk")
