@@ -7,6 +7,5 @@ spring:
 app:
   downstream:
     base-url: http://localhost:9090
-    timeout: 2s
   jwt:
     secret: classroom-dev-jwt-secret-key-0123456789

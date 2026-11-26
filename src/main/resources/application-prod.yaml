@@ -7,6 +7,5 @@ spring:
 app:
   downstream:
     base-url: ${CSS_DOWNSTREAM_URL}
-    timeout: 2s
   jwt:
     secret: ${CSS_JWT_SECRET}
