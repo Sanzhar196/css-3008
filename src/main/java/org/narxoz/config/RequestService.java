@@ -11,9 +11,13 @@ import org.narxoz.persistence.RequestJpa;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class RequestService {
+    private static final Logger log = LoggerFactory.getLogger(RequestService.class);
     private final Rule rules;
     private final RequestJpa requests;
     private final NotificationPort notifications;
@@ -43,6 +47,17 @@ public class RequestService {
     @Transactional(readOnly = true)
     public RequestView require(RequestId id) {
         return requests.find(id).orElseThrow(() -> new MissingRequest(id.value()));
+    }
+
+    @PreAuthorize("hasRole('MANAGER')")
+    @Transactional
+    public RequestView approve(RequestId id, String actor) {
+        RequestView current = requests.find(id).orElseThrow(() -> new MissingRequest(id.value()));
+        rules.check(current.status(), RequestStatus.APPROVED);
+        requests.updateStatus(id, RequestStatus.APPROVED);
+        notifications.statusChanged(id, RequestStatus.APPROVED);
+        log.info("Purchase request {} approved by {}", id.value(), actor);
+        return new RequestView(id, current.businessKey(), RequestStatus.APPROVED, current.title());
     }
 
     /** One transaction, two inserts. The second fails, so the first is rolled back too. */

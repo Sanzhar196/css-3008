@@ -32,6 +32,18 @@ public class RequestJpa {
                 RequestStatus.valueOf(found.getStatus()), found.getTitle()));
     }
 
+    public void updateStatus(RequestId id, RequestStatus status) {
+        RequestEntity found = em.find(RequestEntity.class, UUID.fromString(id.value()));
+        if (found == null) {
+            return;
+        }
+        em.createQuery("update RequestEntity r set r.status = :status where r.id = :id")
+                .setParameter("status", status.name())
+                .setParameter("id", UUID.fromString(id.value()))
+                .executeUpdate();
+        em.clear();
+    }
+
     public int count(String businessKey) {
         Long n = em.createQuery(
                         "select count(r) from RequestEntity r where r.businessKey = :key", Long.class)

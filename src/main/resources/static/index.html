@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Purchase Requests · Sign in</title><link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<main>
+  <header><p class="eyebrow">PURCHASE REQUESTS</p><h1>Request desk</h1>
+    <p>Sign in to review and approve purchase requests.</p></header>
+  <section class="card"><h2>Dev accounts</h2><p><b>CLERK</b> (junior): <code>clerk</code> / <code>clerk-dev</code></p><p><b>MANAGER</b> (senior): <code>manager</code> / <code>manager-dev</code></p><small>Development only</small></section>
+  <section class="card"><form id="login"><h2>Sign in</h2><label>Username<input id="username" required autocomplete="username"></label><label>Password<input id="password" type="password" required autocomplete="current-password"></label><button>Sign in</button></form>
+    <div id="session" hidden><h2>Signed in</h2><p id="identity"></p><button id="logout" class="secondary">Log out</button>
+      <div class="actions"><h3>Allowed call: create request</h3><label>Business key<input id="businessKey"></label><label>Title<input id="title" value="Demo purchase"></label><button id="create">Create request</button>
+      <h3>Locked action: approve</h3><label>Request UUID<input id="requestId" placeholder="Created request ID"></label><button id="approve" class="secondary">Approve</button></div>
+    </div>
+  </section><pre id="result" aria-live="polite">Ready.</pre>
+</main><script src="/app.js"></script></body></html>

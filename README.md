@@ -73,3 +73,13 @@ Roles: `CLERK` (junior) and `MANAGER` (senior). The locked action is `approve` (
 | Anything else | 403 | 403 | 401 |
 
 Dev users (profile `dev` only): `clerk` / `clerk-dev` and `manager` / `manager-dev`.
+
+Login returns a 15-minute HS256 Bearer token from `POST /api/v1/auth/login`.
+`GET /api/me` reports the authenticated username and authorities. The browser
+page is served by Spring Boot at `http://localhost:8080/`; it keeps the token
+in memory only. Use the dev credentials above for local review.
+
+The approve endpoint is `POST /api/v1/purchase-requests/{id}/approve`. It moves
+an existing request from `DRAFT` to `APPROVED` and records the authenticated
+username in the application log. A `CLERK` receives 403 without changing the
+row; a `MANAGER` can approve it.

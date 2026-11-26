@@ -3,6 +3,7 @@ package org.narxoz.handler;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
 import org.narxoz.config.RequestService;
+import org.narxoz.config.SecurityConfig;
 import org.narxoz.domain.DuplicateRequest;
 import org.narxoz.domain.MissingRequest;
 import org.narxoz.domain.RequestId;
@@ -13,6 +14,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.context.annotation.Import;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -22,14 +25,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(RequestController.class)
-@ContextConfiguration(classes = {RequestController.class, ApiErrors.class})
+@WebMvcTest({RequestController.class, MeController.class})
+@ContextConfiguration(classes = {RequestController.class, MeController.class, ApiErrors.class, SecurityConfig.class, ApiSecurityHandlers.class})
 class RequestControllerTest {
 
     private static final String BASE = "/api/v1/purchase-requests";
@@ -40,6 +45,9 @@ class RequestControllerTest {
     @MockitoBean
     RequestService service;
 
+    @MockitoBean
+    JwtDecoder jwtDecoder;
+
     @Test
     void validBodyIs201WithLocationAndFirstStatus() throws Exception {
         when(service.register(any(RequestId.class), eq("PR-19"), eq("Monitors for room 3")))
@@ -48,7 +56,8 @@ class RequestControllerTest {
 
         MvcResult result = mvc.perform(post(BASE)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"businessKey\":\"PR-19\",\"title\":\"Monitors for room 3\"}"))
+                        .content("{\"businessKey\":\"PR-19\",\"title\":\"Monitors for room 3\"}")
+                        .with(jwt().authorities(() -> "ROLE_CLERK")))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.businessKey").value("PR-19"))
                 .andExpect(jsonPath("$.status").value("DRAFT"))
@@ -65,7 +74,7 @@ class RequestControllerTest {
         when(service.require(any(RequestId.class))).thenReturn(
                 new RequestView(new RequestId(id.toString()), "PR-19", RequestStatus.DRAFT, "Monitors"));
 
-        mvc.perform(get(BASE + "/" + id))
+        mvc.perform(get(BASE + "/" + id).with(jwt().authorities(() -> "ROLE_CLERK")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()))
                 .andExpect(jsonPath("$.title").value("Monitors"));
@@ -75,7 +84,8 @@ class RequestControllerTest {
     void blankTitleIs400NamesTheFieldAndSkipsTheService() throws Exception {
         mvc.perform(post(BASE)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"businessKey\":\"PR-19\",\"title\":\"\"}"))
+                        .content("{\"businessKey\":\"PR-19\",\"title\":\"\"}")
+                        .with(jwt().authorities(() -> "ROLE_CLERK")))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION"))
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("title")));
@@ -87,7 +97,7 @@ class RequestControllerTest {
     void missingRequestIs404() throws Exception {
         when(service.require(any(RequestId.class))).thenThrow(new MissingRequest("x"));
 
-        mvc.perform(get(BASE + "/" + UUID.randomUUID()))
+        mvc.perform(get(BASE + "/" + UUID.randomUUID()).with(jwt().authorities(() -> "ROLE_CLERK")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("NOT_FOUND"));
     }
@@ -99,7 +109,8 @@ class RequestControllerTest {
 
         mvc.perform(post(BASE)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"businessKey\":\"PR-19\",\"title\":\"Again\"}"))
+                        .content("{\"businessKey\":\"PR-19\",\"title\":\"Again\"}")
+                        .with(jwt().authorities(() -> "ROLE_CLERK")))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("DUPLICATE"))
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("PR-19")));
@@ -107,7 +118,7 @@ class RequestControllerTest {
 
     @Test
     void businessKeyInThePathIs400IdMustBeUuid() throws Exception {
-        mvc.perform(get(BASE + "/PR-19"))
+        mvc.perform(get(BASE + "/PR-19").with(jwt().authorities(() -> "ROLE_CLERK")))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION"))
                 .andExpect(jsonPath("$.message").value("id must be a UUID"));
@@ -118,8 +129,46 @@ class RequestControllerTest {
         mvc.perform(post(BASE)
                         .header("X-Correlation-Id", "abc123")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"businessKey\":\"PR-19\",\"title\":\"\"}"))
+                        .content("{\"businessKey\":\"PR-19\",\"title\":\"\"}")
+                        .with(jwt().authorities(() -> "ROLE_CLERK")))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.correlationId").value("abc123"));
     }
+
+    @Test
+    void anonymousReadIs401WithErrorRecord() throws Exception {
+        mvc.perform(get(BASE + "/" + UUID.randomUUID()))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHENTICATED"))
+                .andExpect(jsonPath("$.message").value("valid token required"))
+                .andExpect(jsonPath("$.correlationId").isNotEmpty());
+        verifyNoInteractions(service);
+    }
+
+    @Test
+    void clerkCannotApproveAndManagerCan() throws Exception {
+        UUID id = UUID.randomUUID();
+        mvc.perform(post(BASE + "/" + id + "/approve").with(jwt().authorities(() -> "ROLE_CLERK")))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+        verifyNoInteractions(service);
+
+        when(service.approve(any(RequestId.class), eq("manager"))).thenReturn(
+                new RequestView(new RequestId(id.toString()), "PR-19", RequestStatus.APPROVED, "Monitor"));
+        mvc.perform(post(BASE + "/" + id + "/approve")
+                        .with(jwt().jwt(token -> token.subject("manager")).authorities(() -> "ROLE_MANAGER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("APPROVED"));
+        verify(service).approve(new RequestId(id.toString()), "manager");
+    }
+
+    @Test
+    void meReturnsUsernameAndAuthoritiesFromJwt() throws Exception {
+        mvc.perform(get("/api/me").with(jwt().jwt(token -> token.subject("clerk"))
+                        .authorities(() -> "ROLE_CLERK")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("clerk"))
+                .andExpect(jsonPath("$.authorities[0]").value("ROLE_CLERK"));
+    }
+
 }

@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
 
 import java.net.URI;
 import java.util.UUID;
@@ -66,5 +67,16 @@ public class RequestController {
     @GetMapping("/{id}")
     public RequestResponse get(@PathVariable UUID id) {
         return RequestResponse.from(requests.require(new RequestId(id.toString())));
+    }
+
+    @Operation(summary = "Approve a purchase request")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Request approved"),
+            @ApiResponse(responseCode = "401", description = "Valid token required"),
+            @ApiResponse(responseCode = "403", description = "Manager role required")
+    })
+    @PostMapping("/{id}/approve")
+    public RequestResponse approve(@PathVariable UUID id, Authentication authentication) {
+        return RequestResponse.from(requests.approve(new RequestId(id.toString()), authentication.getName()));
     }
 }

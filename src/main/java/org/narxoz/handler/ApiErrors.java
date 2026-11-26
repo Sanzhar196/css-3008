@@ -61,6 +61,12 @@ public class ApiErrors {
                 .body(new ApiError("DUPLICATE", ex.getMessage(), correlation(req)));
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    ResponseEntity<ApiError> invalidTransition(IllegalStateException ex, HttpServletRequest req) {
+        return ResponseEntity.status(409)
+                .body(new ApiError("INVALID_TRANSITION", ex.getMessage(), correlation(req)));
+    }
+
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
     ResponseEntity<ApiError> unsupported(HttpMediaTypeNotSupportedException ex, HttpServletRequest req) {
         return ResponseEntity.status(415)
