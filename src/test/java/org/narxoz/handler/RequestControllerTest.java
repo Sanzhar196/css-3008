@@ -10,6 +10,11 @@ import org.narxoz.domain.RequestId;
 import org.narxoz.domain.RequestStatus;
 import org.narxoz.domain.RequestView;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration;
+import org.springframework.boot.actuate.autoconfigure.endpoint.web.WebEndpointAutoConfiguration;
+import org.springframework.boot.actuate.autoconfigure.health.HealthEndpointAutoConfiguration;
+import org.springframework.boot.actuate.autoconfigure.web.server.ManagementContextAutoConfiguration;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
@@ -34,6 +39,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest({RequestController.class, MeController.class})
+@ImportAutoConfiguration({
+        EndpointAutoConfiguration.class,
+        HealthEndpointAutoConfiguration.class,
+        WebEndpointAutoConfiguration.class,
+        ManagementContextAutoConfiguration.class
+})
 @ContextConfiguration(classes = {RequestController.class, MeController.class, ApiErrors.class, SecurityConfig.class, ApiSecurityHandlers.class})
 class RequestControllerTest {
 
@@ -134,6 +145,13 @@ class RequestControllerTest {
                         .with(jwt().authorities(() -> "ROLE_CLERK")))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.correlationId").value("abc123"));
+    }
+
+    @Test
+    void actuatorHealthIsOpenWithoutToken() throws Exception {
+        mvc.perform(get("/actuator/health"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"));
     }
 
     @Test

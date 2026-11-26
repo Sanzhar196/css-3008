@@ -2,6 +2,9 @@ package org.narxoz.config;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtException;
@@ -61,10 +64,27 @@ class TokenServiceTest {
         assertThrows(JwtException.class, () -> decoder("helpdesk").decode(issued.value()));
     }
 
-    @Test
-    void shortSecretFailsAtStartup() {
-        JwtProperties shortSecret = new JwtProperties("secret", ISSUER, Duration.ofMinutes(15));
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = "secret")
+    void missingOrShortSecretIsRejected(String secret) {
+        JwtProperties shortSecret = new JwtProperties(secret, ISSUER, Duration.ofMinutes(15));
 
         assertThrows(IllegalStateException.class, () -> new JwtConfig().jwtKey(shortSecret));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"a", "я", "😀"})
+    void secretRequiresAtLeast32UnicodeCodePoints(String character) {
+        JwtConfig config = new JwtConfig();
+        Duration ttl = Duration.ofMinutes(15);
+        JwtProperties tooShort = new JwtProperties(character.repeat(31), ISSUER, ttl);
+        assertThrows(IllegalStateException.class, () -> config.jwtKey(tooShort));
+
+        JwtProperties minimum = new JwtProperties(character.repeat(32), ISSUER, ttl);
+        SecretKey jwtKey = config.jwtKey(minimum);
+        var issuer = new TokenService(config.jwtEncoder(jwtKey), minimum);
+        var issued = issuer.issue("manager", List.of("ROLE_MANAGER"));
+        assertEquals("manager", config.jwtDecoder(jwtKey, minimum).decode(issued.value()).getSubject());
     }
 }

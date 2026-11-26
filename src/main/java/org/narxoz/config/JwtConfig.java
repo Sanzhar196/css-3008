@@ -21,13 +21,11 @@ public class JwtConfig {
 
     @Bean
     SecretKey jwtKey(JwtProperties props) {
-        byte[] bytes = props.secret() == null
-                ? new byte[0]
-                : props.secret().getBytes(StandardCharsets.UTF_8);
-        if (bytes.length < 32) {
+        String secret = props.secret();
+        if (secret == null || secret.codePointCount(0, secret.length()) < 32) {
             throw new IllegalStateException("app.jwt.secret must be at least 32 characters");
         }
-        return new SecretKeySpec(bytes, "HmacSHA256");
+        return new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
     }
 
     @Bean

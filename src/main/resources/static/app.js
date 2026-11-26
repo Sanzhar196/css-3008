@@ -14,7 +14,10 @@ async function api(url, options = {}) {
 $('login').addEventListener('submit', async event => {
   event.preventDefault(); accessToken = undefined;
   const {response, body} = await api('/api/v1/auth/login', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({username:$('username').value,password:$('password').value})});
-  if (!response.ok) { show(body); return; }
+  if (!response.ok) {
+    show({...body, httpStatus: response.status});
+    return;
+  }
   accessToken = body.accessToken; $('login').hidden = true; $('session').hidden = false;
   const me = await api('/api/me'); $('identity').textContent = `${me.body.username} · ${me.body.authorities.join(', ')} · token expires in ${body.expiresIn} seconds`;
   show({status:response.status, message:'Signed in. Token is kept only in memory.'});
