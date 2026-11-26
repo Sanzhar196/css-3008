@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Purchase Requests · Create account</title>
+    <link rel="stylesheet" href="/app.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/"><span class="mark" aria-hidden="true"></span>Request desk</a>
+    </header>
+    <main>
+      <form id="register" class="card" method="post">
+        <h1>Create account</h1>
+        <p>Register as a clerk in the development environment.</p>
+        <label>
+          Username
+          <input id="newUsername" required minlength="3" maxlength="32"
+                 autocomplete="username" autocapitalize="none" spellcheck="false"
+                 aria-describedby="usernameHint">
+        </label>
+        <small id="usernameHint">Use 3–32 ASCII letters, digits, dots, underscores or hyphens. Start with a letter or digit.</small>
+        <label>
+          Password
+          <input id="newPassword" type="password" required minlength="8" maxlength="72"
+                 autocomplete="new-password" aria-describedby="passwordHint">
+        </label>
+        <small id="passwordHint">At least 8 characters and at most 72 UTF-8 bytes.</small>
+        <button type="submit">Create account</button>
+        <p class="switch">Already registered? <a href="/">Sign in →</a></p>
+      </form>
+
+      <pre id="registrationResult" aria-live="polite" hidden></pre>
+    </main>
+    <script src="/registration.js"></script>
+  </body>
+</html>

@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.env.Environment;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -15,9 +16,19 @@ public class UsersConfig {
 
     /** Laptop only. Two classroom users with BCrypt hashes. */
     @Bean
-    @Profile("dev & !prod")
+    @Profile("dev & !registration & !prod")
     @Primary
     UserDetailsService devUsers(PasswordEncoder encoder) {
+        return classroomUsers(encoder);
+    }
+
+    @Bean
+    @Profile(RegistrationUsers.PROFILE)
+    RegistrationUsers registrationUsers(PasswordEncoder encoder, JdbcTemplate jdbc) {
+        return new RegistrationUsers(classroomUsers(encoder), encoder, jdbc);
+    }
+
+    private InMemoryUserDetailsManager classroomUsers(PasswordEncoder encoder) {
         return new InMemoryUserDetailsManager(
                 User.withUsername("clerk")
                         .password(encoder.encode("clerk-dev"))

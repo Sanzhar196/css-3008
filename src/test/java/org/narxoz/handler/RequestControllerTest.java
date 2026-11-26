@@ -166,6 +166,14 @@ class RequestControllerTest {
         verifyNoInteractions(service);
     }
 
+    @Test
+    void registrationStaysClosedInTheLabProfile() throws Exception {
+        mvc.perform(post("/api/v1/auth/register")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/register.html")).andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/v1/auth/register").with(jwt().authorities(() -> "ROLE_MANAGER")))
+                .andExpect(status().isForbidden());
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"ROLE_CLERK", "ROLE_MANAGER"})
     void authenticatedUnknownApiRouteIs403(String role) throws Exception {

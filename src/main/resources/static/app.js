@@ -3,10 +3,16 @@ let correlationId = () => crypto.randomUUID();
 const $ = id => document.getElementById(id);
 
 const show = value => {
+  $('result').hidden = false;
   $('result').textContent = typeof value === 'string'
     ? value
     : JSON.stringify(value, null, 2);
 };
+
+// Registration is optional and the server gates its page by profile.
+fetch('/register.html')
+  .then(response => { $('registerLink').hidden = !response.ok; })
+  .catch(() => { $('registerLink').hidden = true; });
 
 $('businessKey').value = `PR-DEMO-${Date.now()}`;
 

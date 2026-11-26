@@ -88,3 +88,29 @@ row; a `MANAGER` can approve it.
 An unknown route or unsupported API method returns `403 FORBIDDEN` for a
 signed-in user and `401 UNAUTHENTICATED` without a token. Reading a missing
 purchase request at a valid UUID still returns `404 NOT_FOUND`.
+
+## Optional registration demo
+
+Use this command in place of the regular Lab 5 launch command when you want
+registration. It runs login, registration, and the purchase-request API in
+one process on port 8080.
+
+```sh
+mvn spring-boot:run -Dspring-boot.run.profiles=dev,registration \
+  '-Dspring-boot.run.arguments=--server.address=127.0.0.1 --server.port=8080'
+```
+
+Open the [login page](http://localhost:8080/) or the
+[registration page](http://localhost:8080/register.html).
+
+In this mode, `POST /api/v1/auth/register` accepts `username` and `password`.
+It returns `201` with the username and role, `400` for invalid input, or
+`409` for an unavailable username. Usernames are case insensitive. The
+password must contain at least eight characters and fit in 72 UTF-8 bytes.
+Each new account is a `CLERK` and can sign in through the existing page.
+
+Registered accounts and their BCrypt password hashes are stored in PostgreSQL
+in `registration.account`. You can sign in after a restart using the same
+database and profiles. The registration schema has its own Flyway history. The
+default `dev` profile follows the Lab 5 login-only workflow and does not create
+or read accounts in this schema. Production also keeps registration disabled.

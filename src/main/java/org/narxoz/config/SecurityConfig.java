@@ -3,6 +3,7 @@ package org.narxoz.config;
 import org.narxoz.handler.ApiSecurityHandlers;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -25,7 +26,7 @@ public class SecurityConfig {
 
     @Bean
     SecurityFilterChain chain(HttpSecurity http, ApiSecurityHandlers handlers,
-                             HandlerMappingIntrospector introspector) throws Exception {
+                             HandlerMappingIntrospector introspector, Environment environment) throws Exception {
         var mvc = new MvcRequestMatcher.Builder(introspector);
         var unsupportedApiCall = new AndRequestMatcher(mvc.pattern("/api/v1/**"),
                 new NegatedRequestMatcher(new OrRequestMatcher(
@@ -37,18 +38,24 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/", "/index.html", "/app.css", "/app.js").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**")
-                        .permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/purchase-requests/*/approve")
-                        .hasRole("MANAGER")
-                        .requestMatchers(unsupportedApiCall).denyAll()
-                        .requestMatchers("/api/v1/**").hasAnyRole("CLERK", "MANAGER")
-                        .requestMatchers(HttpMethod.GET, "/api/me").hasAnyRole("CLERK", "MANAGER")
-                        .anyRequest().denyAll())
+                .authorizeHttpRequests(auth -> {
+                    auth.requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll();
+                    if (environment.matchesProfiles(RegistrationUsers.PROFILE)) {
+                        auth.requestMatchers(HttpMethod.POST, "/api/v1/auth/register").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/register.html", "/registration.js").permitAll();
+                    }
+                    auth.requestMatchers(HttpMethod.GET,
+                                    "/actuator/health",
+                                    "/", "/index.html", "/app.css", "/app.js", "/skyline.png",
+                                    "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**")
+                            .permitAll()
+                            .requestMatchers(HttpMethod.POST, "/api/v1/purchase-requests/*/approve")
+                            .hasRole("MANAGER")
+                            .requestMatchers(unsupportedApiCall).denyAll()
+                            .requestMatchers("/api/v1/**").hasAnyRole("CLERK", "MANAGER")
+                            .requestMatchers(HttpMethod.GET, "/api/me").hasAnyRole("CLERK", "MANAGER")
+                            .anyRequest().denyAll();
+                })
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint(handlers)
                         .accessDeniedHandler(handlers))

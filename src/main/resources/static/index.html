@@ -7,23 +7,14 @@
     <link rel="stylesheet" href="/app.css">
   </head>
   <body>
+    <header class="topbar">
+      <a class="brand" href="/"><span class="mark" aria-hidden="true"></span>Request desk</a>
+    </header>
     <main>
-      <header>
-        <p class="eyebrow">PURCHASE REQUESTS</p>
-        <h1>Request desk</h1>
-        <p>Sign in to review and approve purchase requests.</p>
-      </header>
-
-      <section class="card">
-        <h2>Dev accounts</h2>
-        <p><b>CLERK</b> (junior): <code>clerk</code> / <code>clerk-dev</code></p>
-        <p><b>MANAGER</b> (senior): <code>manager</code> / <code>manager-dev</code></p>
-        <small>Development only</small>
-      </section>
-
       <section class="card">
         <form id="login">
-          <h2>Sign in</h2>
+          <h1>Sign in</h1>
+          <p>Review and approve purchase requests.</p>
           <label>
             Username
             <input id="username" required autocomplete="username">
@@ -32,11 +23,17 @@
             Password
             <input id="password" type="password" required autocomplete="current-password">
           </label>
-          <button>Sign in</button>
+          <button type="submit">Sign in</button>
+          <p class="switch" id="registerLink" hidden>New here? <a href="/register.html">Create account →</a></p>
+          <details>
+            <summary>Development accounts</summary>
+            <p>CLERK · junior<br><code>clerk / clerk-dev</code></p>
+            <p>MANAGER · senior<br><code>manager / manager-dev</code></p>
+          </details>
         </form>
 
         <div id="session" hidden>
-          <h2>Signed in</h2>
+          <h1>Signed in</h1>
           <p id="identity"></p>
           <button id="logout" class="secondary">Log out</button>
 
@@ -62,7 +59,7 @@
         </div>
       </section>
 
-      <pre id="result" aria-live="polite">Ready.</pre>
+      <pre id="result" aria-live="polite" hidden></pre>
     </main>
     <script src="/app.js"></script>
   </body>
