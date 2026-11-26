@@ -46,6 +46,10 @@ public class RequestEntity {
         return status;
     }
 
+    void setStatus(String status) {
+        this.status = status;
+    }
+
     public String getTitle() {
         return title;
     }

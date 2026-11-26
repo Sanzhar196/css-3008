@@ -1,20 +1,17 @@
 package org.narxoz.config;
 
-import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.security.oauth2.jwt.JwtException;
-import org.springframework.security.oauth2.jwt.JwtValidators;
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
-import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 
 import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -29,24 +26,16 @@ class TokenServiceTest {
     private static final String SECRET = "test-secret-with-at-least-32-bytes!!";
     private static final String ISSUER = "purchase-requests";
 
-    private final SecretKey key = new SecretKeySpec(SECRET.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-    private final TokenService tokens = new TokenService(
-            new NimbusJwtEncoder(new ImmutableSecret<>(key)),
-            new JwtProperties(SECRET, ISSUER, Duration.ofMinutes(15)));
-
-    private NimbusJwtDecoder decoder(String issuer) {
-        NimbusJwtDecoder decoder = NimbusJwtDecoder.withSecretKey(key)
-                .macAlgorithm(MacAlgorithm.HS256)
-                .build();
-        decoder.setJwtValidator(JwtValidators.createDefaultWithIssuer(issuer));
-        return decoder;
-    }
+    private final JwtConfig config = new JwtConfig();
+    private final JwtProperties props = new JwtProperties(SECRET, ISSUER, Duration.ofMinutes(15));
+    private final SecretKey key = config.jwtKey(props);
+    private final TokenService tokens = new TokenService(config.jwtEncoder(key), props);
 
     @Test
     void issuedTokenCanBeReadBack() {
         TokenService.IssuedToken issued = tokens.issue("manager", List.of("ROLE_MANAGER"));
 
-        Jwt jwt = decoder(ISSUER).decode(issued.value());
+        Jwt jwt = config.jwtDecoder(key, props).decode(issued.value());
 
         assertEquals("manager", jwt.getSubject());
         assertEquals(List.of("MANAGER"), jwt.getClaimAsStringList("roles"));
@@ -59,9 +48,26 @@ class TokenServiceTest {
 
     @Test
     void tokenFromAnotherProductIsRejected() {
-        TokenService.IssuedToken issued = tokens.issue("manager", List.of("ROLE_MANAGER"));
+        JwtProperties otherProduct = new JwtProperties(SECRET, "helpdesk", props.ttl());
+        var issued = new TokenService(config.jwtEncoder(key), otherProduct)
+                .issue("manager", List.of("ROLE_MANAGER"));
 
-        assertThrows(JwtException.class, () -> decoder("helpdesk").decode(issued.value()));
+        assertThrows(JwtException.class, () -> config.jwtDecoder(key, props).decode(issued.value()));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void expiredOrMissingExpiryIsRejected(boolean includeExpiration) {
+        Instant now = Instant.now();
+        var claims = JwtClaimsSet.builder().issuer(ISSUER).subject("manager").issuedAt(now.minusSeconds(901));
+        if (includeExpiration) {
+            claims.expiresAt(now.minusSeconds(1));
+        }
+        String value = config.jwtEncoder(key)
+                .encode(JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(), claims.build()))
+                .getTokenValue();
+
+        assertThrows(JwtException.class, () -> config.jwtDecoder(key, props).decode(value));
     }
 
     @ParameterizedTest

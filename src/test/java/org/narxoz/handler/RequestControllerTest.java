@@ -19,6 +19,7 @@ import org.springframework.boot.actuate.autoconfigure.web.server.ManagementConte
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.http.HttpMethod;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -36,6 +37,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -178,6 +180,26 @@ class RequestControllerTest {
     }
 
     @Test
+    void anonymousCreateIs401WithoutCallingService() throws Exception {
+        mvc.perform(post(BASE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"businessKey\":\"PR-19\",\"title\":\"Monitors\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));
+        verifyNoInteractions(service);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"GET", "DELETE", "OPTIONS"})
+    void unsupportedResourceMethodIs403(String method) throws Exception {
+        mvc.perform(request(HttpMethod.valueOf(method), BASE)
+                        .with(jwt().authorities(() -> "ROLE_MANAGER")))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+        verifyNoInteractions(service);
+    }
+
+    @Test
     void anonymousReadIs401WithErrorRecord() throws Exception {
         mvc.perform(get(BASE + "/" + UUID.randomUUID()))
                 .andExpect(status().isUnauthorized())
@@ -198,6 +220,8 @@ class RequestControllerTest {
         when(service.approve(any(RequestId.class), eq("manager"))).thenReturn(
                 new RequestView(new RequestId(id.toString()), "PR-19", RequestStatus.APPROVED, "Monitor"));
         mvc.perform(post(BASE + "/" + id + "/approve")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"actor\":\"ignored\",\"role\":\"CLERK\"}")
                         .with(jwt().jwt(token -> token.subject("manager")).authorities(() -> "ROLE_MANAGER")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("APPROVED"));

@@ -12,6 +12,11 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.servlet.util.matcher.MvcRequestMatcher;
+import org.springframework.security.web.util.matcher.AndRequestMatcher;
+import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
+import org.springframework.web.servlet.handler.HandlerMappingIntrospector;
 
 @Configuration
 @EnableWebSecurity
@@ -19,7 +24,14 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
     @Bean
-    SecurityFilterChain chain(HttpSecurity http, ApiSecurityHandlers handlers) throws Exception {
+    SecurityFilterChain chain(HttpSecurity http, ApiSecurityHandlers handlers,
+                             HandlerMappingIntrospector introspector) throws Exception {
+        var mvc = new MvcRequestMatcher.Builder(introspector);
+        var unsupportedApiCall = new AndRequestMatcher(mvc.pattern("/api/v1/**"),
+                new NegatedRequestMatcher(new OrRequestMatcher(
+                        mvc.pattern(HttpMethod.POST, "/api/v1/purchase-requests"),
+                        mvc.pattern(HttpMethod.GET, "/api/v1/purchase-requests/{id}"))));
+
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
@@ -28,12 +40,14 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
-                        .requestMatchers("/", "/index.html", "/app.css", "/app.js").permitAll()
-                        .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/", "/index.html", "/app.css", "/app.js").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**")
+                        .permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/purchase-requests/*/approve")
                         .hasRole("MANAGER")
+                        .requestMatchers(unsupportedApiCall).denyAll()
                         .requestMatchers("/api/v1/**").hasAnyRole("CLERK", "MANAGER")
-                        .requestMatchers("/api/me").hasAnyRole("CLERK", "MANAGER")
+                        .requestMatchers(HttpMethod.GET, "/api/me").hasAnyRole("CLERK", "MANAGER")
                         .anyRequest().denyAll())
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint(handlers)

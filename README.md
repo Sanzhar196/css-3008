@@ -69,6 +69,7 @@ Roles: `CLERK` (junior) and `MANAGER` (senior). The locked action is `approve` (
 | `POST /api/v1/purchase-requests/{id}/approve` | 403 | yes | 401 |
 | `GET /api/me` | yes | yes | 401 |
 | `GET /actuator/health` | anyone | anyone | allowed |
+| `GET /` and its HTML, CSS, and JavaScript assets | anyone | anyone | allowed |
 | springdoc UI and `/v3/api-docs/**` | anyone | anyone | allowed |
 | Anything else | 403 | 403 | 401 |
 
@@ -83,3 +84,7 @@ The approve endpoint is `POST /api/v1/purchase-requests/{id}/approve`. It moves
 an existing request from `DRAFT` to `APPROVED` and records the authenticated
 username in the application log. A `CLERK` receives 403 without changing the
 row; a `MANAGER` can approve it.
+
+An unknown route or unsupported API method returns `403 FORBIDDEN` for a
+signed-in user and `401 UNAUTHENTICATED` without a token. Reading a missing
+purchase request at a valid UUID still returns `404 NOT_FOUND`.

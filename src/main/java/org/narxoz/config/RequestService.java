@@ -52,7 +52,7 @@ public class RequestService {
     @PreAuthorize("hasRole('MANAGER')")
     @Transactional
     public RequestView approve(RequestId id, String actor) {
-        RequestView current = requests.find(id).orElseThrow(() -> new MissingRequest(id.value()));
+        RequestView current = requests.findForUpdate(id).orElseThrow(() -> new MissingRequest(id.value()));
         rules.check(current.status(), RequestStatus.APPROVED);
         requests.updateStatus(id, RequestStatus.APPROVED);
         notifications.statusChanged(id, RequestStatus.APPROVED);

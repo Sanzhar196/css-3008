@@ -13,7 +13,7 @@ public class TransitionRule implements Rule {
     @Override
     public void check(RequestStatus from, RequestStatus to) {
         if (!ALLOWED.get(from).contains(to)) {
-            throw new IllegalStateException(from + " -> " + to + " is forbidden");
+            throw new InvalidTransition(from + " -> " + to + " is forbidden");
         }
     }
 }

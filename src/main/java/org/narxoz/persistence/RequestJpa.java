@@ -1,6 +1,8 @@
 package org.narxoz.persistence;
 
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+import org.narxoz.domain.MissingRequest;
 import org.narxoz.domain.RequestId;
 import org.narxoz.domain.RequestStatus;
 import org.narxoz.domain.RequestView;
@@ -23,25 +25,27 @@ public class RequestJpa {
     }
 
     public Optional<RequestView> find(RequestId id) {
-        RequestEntity found = em.find(RequestEntity.class, UUID.fromString(id.value()));
-        if (found == null) {
-            return Optional.empty();
-        }
-        // an unknown status text throws here: it never becomes a new status
-        return Optional.of(new RequestView(id, found.getBusinessKey(),
-                RequestStatus.valueOf(found.getStatus()), found.getTitle()));
+        return Optional.ofNullable(em.find(RequestEntity.class, UUID.fromString(id.value())))
+                .map(found -> toView(id, found));
+    }
+
+    public Optional<RequestView> findForUpdate(RequestId id) {
+        return Optional.ofNullable(em.find(RequestEntity.class, UUID.fromString(id.value()),
+                        LockModeType.PESSIMISTIC_WRITE))
+                .map(found -> toView(id, found));
     }
 
     public void updateStatus(RequestId id, RequestStatus status) {
         RequestEntity found = em.find(RequestEntity.class, UUID.fromString(id.value()));
         if (found == null) {
-            return;
+            throw new MissingRequest(id.value());
         }
-        em.createQuery("update RequestEntity r set r.status = :status where r.id = :id")
-                .setParameter("status", status.name())
-                .setParameter("id", UUID.fromString(id.value()))
-                .executeUpdate();
-        em.clear();
+        found.setStatus(status.name());
+    }
+
+    private static RequestView toView(RequestId id, RequestEntity found) {
+        return new RequestView(id, found.getBusinessKey(),
+                RequestStatus.valueOf(found.getStatus()), found.getTitle());
     }
 
     public int count(String businessKey) {
